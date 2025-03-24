@@ -66,13 +66,20 @@ def ponto_dentro_obstaculo(ponto):
             return True
     return False
 
-# Função para verificar se dois segmentos de reta se interceptam
 def verificar_intersecao(p1, p2, p3, p4):
-    def ccw(A, B, C):
-        return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
-    
-    # Retorna True se os segmentos AB e CD se interceptam
-    return ccw(p1, p3, p4) != ccw(p2, p3, p4) and ccw(p1, p2, p3) != ccw(p1, p2, p4)
+    def orientacao(A, B, C):
+        # Calcula a área do triângulo formado por A, B e C
+        return (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+
+    # Verifica se as orientações cruzadas são diferentes
+    o1 = orientacao(p1, p2, p3)
+    o2 = orientacao(p1, p2, p4)
+    o3 = orientacao(p3, p4, p1)
+    o4 = orientacao(p3, p4, p2)
+
+    # Se os sinais das orientações são opostos, os segmentos se cruzam
+    return (o1 * o2 < 0) and (o3 * o4 < 0)
+
 
 # Função para verificar se o segmento de reta entre dois pontos cruza algum obstáculo
 def verifica_cruzamento_obstaculo(p1, p2):
@@ -97,22 +104,27 @@ def verifica_cruzamento_obstaculo(p1, p2):
     
     return False
 
-# Função para gerar todos os vértices (incluindo cantos dos obstáculos)
 def gerar_vertices():
     vertices = [ponto_inicial, ponto_final]
     
     # Adicionar os 4 cantos de cada obstáculo como vértices
     for obs in obstaculos:
         obstaculo_x, obstaculo_y = obs
+        # Use exact coordinates for corners to avoid floating-point issues
         vertices.append((obstaculo_x - 0.5, obstaculo_y + 0.5))  # Canto superior esquerdo
         vertices.append((obstaculo_x + 0.5, obstaculo_y + 0.5))  # Canto superior direito
         vertices.append((obstaculo_x - 0.5, obstaculo_y - 0.5))  # Canto inferior esquerdo
         vertices.append((obstaculo_x + 0.5, obstaculo_y - 0.5))  # Canto inferior direito
     
-    # Remover duplicatas ou vértices muito próximos
+    # More strict filtering of duplicate vertices
     vertices_unicos = []
     for v in vertices:
-        if not any(calcular_distancia(v, u) < 0.01 for u in vertices_unicos):
+        is_duplicate = False
+        for existing in vertices_unicos:
+            if calcular_distancia(v, existing) < 1e-6:  # Stricter threshold
+                is_duplicate = True
+                break
+        if not is_duplicate:
             vertices_unicos.append(v)
     
     return vertices_unicos
@@ -218,7 +230,7 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
     # Plota as arestas possíveis (grafo de visibilidade)
     for aresta in arestas:
         ax.plot([aresta[0][0], aresta[1][0]], [aresta[0][1], aresta[1][1]], 
-                color='black', alpha=0.8, linewidth=0.8)
+                color='black', alpha=0.5, linewidth=0.5)
 
     # Exibe a quantidade de arestas no gráfico
     ax.text(0.02, 0.98, f'Arestas: {num_arestas}', transform=ax.transAxes,
