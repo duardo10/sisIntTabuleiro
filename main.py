@@ -213,7 +213,8 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
 
     # Plota as arestas possíveis (grafo de visibilidade)
     for aresta in arestas:
-        ax.plot([aresta[0][0], aresta[1][0]], [aresta[0][1], aresta[1][1]], 'k-', alpha=0.1)
+        ax.plot([aresta[0][0], aresta[1][0]], [aresta[0][1], aresta[1][1]], 
+                color='black', alpha=0.8, linewidth=0.8)
 
     # Plota todos os vértices como pontos pretos
     for i, v in enumerate(vertices):
@@ -224,7 +225,7 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
     if caminho:
         for i in range(len(caminho) - 1):
             ax.plot([caminho[i][0], caminho[i + 1][0]],
-                    [caminho[i][1], caminho[i + 1][1]], 'r-', linewidth=2)
+                    [caminho[i][1], caminho[i + 1][1]], 'r-', linewidth=1.5)
 
     # Plota os pontos inicial e final com destaque
     ax.plot(ponto_inicial[0], ponto_inicial[1], 'o', color='green', markersize=10, label='Início')
@@ -238,6 +239,7 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
     plt.title("Grafo de Visibilidade (Zoom Interativo)")
     plt.legend()
     plt.show()
+
 
 # Função principal
 def main():
