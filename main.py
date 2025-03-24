@@ -196,7 +196,7 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
             new_height = (cur_ylim[1] - cur_ylim[0]) * scale_factor
 
             relx = (cur_xlim[1] - xdata) / (cur_xlim[1] - cur_xlim[0])
-            rely = (cur_ylim[1] - ydata) / (cur_ylim[1] - cur_ylim[0])
+            rely = (cur_ylim[1] - ydata) / (cur_ylim[1] - cur_xlim[0])
 
             ax.set_xlim([xdata - new_width * (1 - relx), xdata + new_width * relx])
             ax.set_ylim([ydata - new_height * (1 - rely), ydata + new_height * rely])
@@ -211,10 +211,18 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
         ax.add_patch(patches.Rectangle((obstaculo[0] - 0.5, obstaculo[1] - 0.5), 1, 1,
                                        color='lightblue', alpha=0.7, edgecolor='blue'))
 
+    # Contador de arestas plotadas
+    num_arestas = len(arestas)
+    print(f"Número de arestas plotadas: {num_arestas}")
+
     # Plota as arestas possíveis (grafo de visibilidade)
     for aresta in arestas:
         ax.plot([aresta[0][0], aresta[1][0]], [aresta[0][1], aresta[1][1]], 
                 color='black', alpha=0.8, linewidth=0.8)
+
+    # Exibe a quantidade de arestas no gráfico
+    ax.text(0.02, 0.98, f'Arestas: {num_arestas}', transform=ax.transAxes,
+            fontsize=12, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
 
     # Plota todos os vértices como pontos pretos
     for i, v in enumerate(vertices):
@@ -239,6 +247,7 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
     plt.title("Grafo de Visibilidade (Zoom Interativo)")
     plt.legend()
     plt.show()
+
 
 
 # Função principal
