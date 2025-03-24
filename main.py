@@ -148,42 +148,33 @@ def encontrar_arestas(vertices):
     return grafo, arestas
 
 
-# Função para encontrar um caminho usando A*
+# Função para encontrar um caminho qualquer utilizando busca em largura (BFS)
 def encontrar_caminho(grafo, vertices):
-    inicio = 0  # Índice do ponto inicial
-    fim = 1     # Índice do ponto final
-    
-    # Função heurística (distância euclidiana ao destino)
-    def heuristica(indice):
-        return calcular_distancia(vertices[indice], vertices[fim])
-    
-    # Lista aberta e fechada para A*
-    fronteira = [(0 + heuristica(inicio), 0, [inicio])]  # (custo_total, custo_atual, caminho)
-    visitado = set()
-    
-    while fronteira:
-        fronteira.sort()  # Ordenar pela prioridade (menor custo total)
-        _, custo_atual, caminho = fronteira.pop(0)
-        vertice_atual = caminho[-1]
-        
-        # Se chegamos ao destino
-        if vertice_atual == fim:
-            return [vertices[i] for i in caminho]
-        
-        # Ignorar se já visitamos
-        if vertice_atual in visitado:
-            continue
-        
-        visitado.add(vertice_atual)
-        
-        # Explorar vizinhos
-        for proximo in grafo[vertice_atual]:
-            if proximo not in visitado:
-                novo_custo = custo_atual + calcular_distancia(vertices[vertice_atual], vertices[proximo])
-                custo_total = novo_custo + heuristica(proximo)
-                fronteira.append((custo_total, novo_custo, caminho + [proximo]))
-    
-    return None  # Não há caminho possível
+    from collections import deque
+
+    # Fila para armazenar os caminhos parciais
+    fila = deque([[0]])  # Começa com o índice do ponto inicial
+    visitados = set([0])  # Conjunto para verificar os nós visitados
+
+    while fila:
+        caminho_atual = fila.popleft()
+        ultimo_vertice = caminho_atual[-1]
+
+        # Verifica se chegou ao ponto final
+        if ultimo_vertice == 1:  # Índice 1 corresponde ao ponto final
+            return [vertices[i] for i in caminho_atual]
+
+        # Explora os vizinhos não visitados
+        for vizinho in grafo[ultimo_vertice]:
+            if vizinho not in visitados:
+                novo_caminho = list(caminho_atual) + [vizinho]
+                fila.append(novo_caminho)
+                visitados.add(vizinho)
+
+    # Se não encontrou um caminho, retorna None
+    return None
+
+
 
 # Função para plotar o grafo de visibilidade
 def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
