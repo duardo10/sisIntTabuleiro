@@ -14,14 +14,20 @@ num_obstaculos = int(input("Digite a quantidade de obstáculos: "))
 # Função para aumentar o tabuleiro até caber os obstáculos
 def aumentar_tabuleiro(largura, altura, num_obstaculos):
     area_tabuleiro = largura * altura
-    while area_tabuleiro < num_obstaculos * 2:  # Multiplica por 2 para dar mais espaço
-        largura += 2
-        altura += 2
+    while area_tabuleiro < num_obstaculos * 3:  # Multiplicado por 3 para garantir espaço suficiente
+        largura += 1
+        altura += 1
         area_tabuleiro = largura * altura
     return largura, altura
 
 # Aumenta o tamanho do tabuleiro se necessário
+largura_original = largura_tabuleiro
+altura_original = altura_tabuleiro
 largura_tabuleiro, altura_tabuleiro = aumentar_tabuleiro(largura_tabuleiro, altura_tabuleiro, num_obstaculos)
+
+# Se o tabuleiro foi aumentado, informar ao usuário
+if largura_tabuleiro > largura_original or altura_tabuleiro > altura_original:
+    print(f"Tabuleiro aumentado para {largura_tabuleiro}x{altura_tabuleiro} para acomodar {num_obstaculos} obstáculos")
 
 # Ponto inicial e final
 ponto_inicial = (0, 0)
@@ -36,8 +42,11 @@ def calcular_distancia(p1, p2):
 
 # Função para adicionar obstáculos respeitando a distância mínima
 def adicionar_obstaculo():
-    tentativas = 0
-    while len(obstaculos) < num_obstaculos:
+    global largura_tabuleiro, altura_tabuleiro, ponto_final
+    
+    remaining_attempts = 100000  # Número alto de tentativas para garantir
+    
+    while len(obstaculos) < num_obstaculos and remaining_attempts > 0:
         novo_x = random.uniform(0.5, largura_tabuleiro - 0.5)
         novo_y = random.uniform(0.5, altura_tabuleiro - 0.5)
         novo_obstaculo = (novo_x, novo_y)
@@ -50,13 +59,30 @@ def adicionar_obstaculo():
         if not colisao:
             obstaculos.append(novo_obstaculo)
         
-        tentativas += 1
-        if tentativas > 1000:
-            print("Não foi possível alocar todos os obstáculos devido ao espaço limitado.")
-            break
+        remaining_attempts -= 1
+    
+    # Se não conseguiu adicionar todos os obstáculos, aumenta o tabuleiro e tenta de novo
+    if len(obstaculos) < num_obstaculos:
+        # Limpa a lista de obstáculos para recomeçar
+        obstaculos.clear()
+        
+        # Aumenta o tabuleiro significativamente
+        largura_tabuleiro += 2
+        altura_tabuleiro += 2
+        ponto_final = (largura_tabuleiro - 1, altura_tabuleiro - 1)
+        
+        print(f"Aumentando tabuleiro para {largura_tabuleiro}x{altura_tabuleiro}")
+        # Chama recursivamente para tentar novamente
+        adicionar_obstaculo()
 
 # Adicionar obstáculos
 adicionar_obstaculo()
+
+# Verificar se todos os obstáculos foram adicionados
+if len(obstaculos) != num_obstaculos:
+    print(f"ERRO: Conseguiu adicionar apenas {len(obstaculos)} de {num_obstaculos} obstáculos.")
+else:
+    print(f"Todos os {num_obstaculos} obstáculos foram adicionados com sucesso.")
 
 # Função para verificar se um ponto está dentro de um obstáculo
 def ponto_dentro_obstaculo(ponto):
@@ -311,7 +337,7 @@ def plotar_grafo_visibilidade(vertices, arestas, caminho=None):
     ax.set_ylim(-1, altura_tabuleiro + 1)
     ax.set_aspect('equal')
 
-    plt.title("Grafo de Visibilidade (Zoom Interativo)")
+    plt.title(f"Grafo de Visibilidade - {len(obstaculos)} obstáculos (Zoom Interativo)")
     plt.legend()
     plt.show()
 
