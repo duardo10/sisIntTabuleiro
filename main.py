@@ -60,49 +60,113 @@ adicionar_obstaculo()
 
 # Função para verificar se um ponto está dentro de um obstáculo
 def ponto_dentro_obstaculo(ponto):
-    for obs in obstaculos:
-        obstaculo_x, obstaculo_y = obs
-        if (abs(ponto[0] - obstaculo_x) < 0.5 and abs(ponto[1] - obstaculo_y) < 0.5):
+    x, y = ponto
+    for ox, oy in obstaculos:
+        if (ox - 0.5 < x < ox + 0.5) and (oy - 0.5 < y < oy + 0.5):
             return True
     return False
 
-def verificar_intersecao(p1, p2, p3, p4):
-    def orientacao(A, B, C):
-        # Calcula a área do triângulo formado por A, B e C
-        return (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+# Função para verificar se um ponto é um vértice de obstáculo
+def eh_vertice_obstaculo(ponto, epsilon=1e-6):
+    x, y = ponto
+    for obs in obstaculos:
+        ox, oy = obs
+        corners = [
+            (ox - 0.5, oy + 0.5),  # Canto superior esquerdo
+            (ox + 0.5, oy + 0.5),  # Canto superior direito
+            (ox - 0.5, oy - 0.5),  # Canto inferior esquerdo
+            (ox + 0.5, oy - 0.5)   # Canto inferior direito
+        ]
+        for corner in corners:
+            if calcular_distancia(ponto, corner) < epsilon:
+                return True
+    return False
 
-    # Verifica se as orientações cruzadas são diferentes
-    o1 = orientacao(p1, p2, p3)
-    o2 = orientacao(p1, p2, p4)
-    o3 = orientacao(p3, p4, p1)
-    o4 = orientacao(p3, p4, p2)
+def verificar_intersecao(p1, p2, p3, p4, permitir_vertices=True):
+    # Se permitir_vertices é True, verificamos se p3 ou p4 são os pontos de extremidade do segmento p1-p2
+    if permitir_vertices:
+        epsilon = 1e-6
+        # Se qualquer ponto de extremidade de uma aresta é igual a qualquer ponto de extremidade da outra aresta,
+        # não consideramos como intersecção verdadeira
+        if (calcular_distancia(p1, p3) < epsilon or 
+            calcular_distancia(p1, p4) < epsilon or 
+            calcular_distancia(p2, p3) < epsilon or 
+            calcular_distancia(p2, p4) < epsilon):
+            return False
 
-    # Se os sinais das orientações são opostos, os segmentos se cruzam
-    return (o1 * o2 < 0) and (o3 * o4 < 0)
+    xa, ya = p1
+    xb, yb = p2
+    xc, yc = p3
+    xd, yd = p4
 
+    det = (xa - xb) * (yc - yd) - (ya - yb) * (xc - xd)
+    
+    # Retas paralelas ou coincidentes
+    if abs(det) < 1e-10:
+        return False
+    
+    # Equações paramétricas para encontrar ponto de interseção
+    t = ((xa - xc) * (yc - yd) - (ya - yc) * (xc - xd)) / det
+    s = ((xa - xc) * (ya - yb) - (ya - yc) * (xa - xb)) / det
+    
+    epsilon = 1e-9
+    # Verifica se a interseção ocorre dentro dos segmentos de reta
+    return 0 + epsilon <= t <= 1 - epsilon and 0 + epsilon <= s <= 1 - epsilon
 
 # Função para verificar se o segmento de reta entre dois pontos cruza algum obstáculo
 def verifica_cruzamento_obstaculo(p1, p2):
-    # Se algum dos pontos estiver dentro de um obstáculo, retornar True
+    # Se p1 ou p2 está dentro de algum obstáculo (não na borda), então há cruzamento
     if ponto_dentro_obstaculo(p1) or ponto_dentro_obstaculo(p2):
         return True
     
+    # Verifica se p1 ou p2 são vértices de obstáculos
+    p1_eh_vertice = eh_vertice_obstaculo(p1)
+    p2_eh_vertice = eh_vertice_obstaculo(p2)
+    
+    # Se ambos são vértices, precisamos verificar se estão no mesmo obstáculo e se a linha entre eles
+    # atravessa o obstáculo diagonalmente
+    if p1_eh_vertice and p2_eh_vertice:
+        # Implementação simplificada: se a linha for diagonal a um obstáculo, não permitimos
+        # (Esta verificação pode ser melhorada para casos específicos)
+        for obs in obstaculos:
+            ox, oy = obs
+            cantos = [
+                (ox - 0.5, oy + 0.5),  # Canto superior esquerdo
+                (ox + 0.5, oy + 0.5),  # Canto superior direito
+                (ox - 0.5, oy - 0.5),  # Canto inferior esquerdo
+                (ox + 0.5, oy - 0.5)   # Canto inferior direito
+            ]
+            
+            # Verifica se p1 e p2 são cantos opostos do mesmo obstáculo
+            p1_no_obstaculo = any(calcular_distancia(p1, canto) < 1e-6 for canto in cantos)
+            p2_no_obstaculo = any(calcular_distancia(p2, canto) < 1e-6 for canto in cantos)
+            
+            if p1_no_obstaculo and p2_no_obstaculo:
+                # Verifica se p1 e p2 são cantos opostos (diagonal)
+                if (calcular_distancia(p1, cantos[0]) < 1e-6 and calcular_distancia(p2, cantos[3]) < 1e-6) or \
+                   (calcular_distancia(p1, cantos[3]) < 1e-6 and calcular_distancia(p2, cantos[0]) < 1e-6) or \
+                   (calcular_distancia(p1, cantos[1]) < 1e-6 and calcular_distancia(p2, cantos[2]) < 1e-6) or \
+                   (calcular_distancia(p1, cantos[2]) < 1e-6 and calcular_distancia(p2, cantos[1]) < 1e-6):
+                    return True
+    
+    # Para cada obstáculo, verifica se o segmento cruza alguma aresta do obstáculo
     for obs in obstaculos:
-        # Para cada obstáculo, verificamos as 4 arestas do quadrado
-        obstaculo_x, obstaculo_y = obs
-        canto_sup_esq = (obstaculo_x - 0.5, obstaculo_y + 0.5)
-        canto_sup_dir = (obstaculo_x + 0.5, obstaculo_y + 0.5)
-        canto_inf_esq = (obstaculo_x - 0.5, obstaculo_y - 0.5)
-        canto_inf_dir = (obstaculo_x + 0.5, obstaculo_y - 0.5)
-        
-        # Verificar interseção com as 4 arestas do obstáculo
-        if (verificar_intersecao(p1, p2, canto_sup_esq, canto_sup_dir) or  # Aresta superior
-            verificar_intersecao(p1, p2, canto_sup_dir, canto_inf_dir) or  # Aresta direita
-            verificar_intersecao(p1, p2, canto_inf_dir, canto_inf_esq) or  # Aresta inferior
-            verificar_intersecao(p1, p2, canto_inf_esq, canto_sup_esq)):   # Aresta esquerda
+        ox, oy = obs
+        canto_sup_esq = (ox - 0.5, oy + 0.5)
+        canto_sup_dir = (ox + 0.5, oy + 0.5)
+        canto_inf_esq = (ox - 0.5, oy - 0.5)
+        canto_inf_dir = (ox + 0.5, oy - 0.5)
+
+        # Verifica intersecção com cada lado do obstáculo
+        # Permite tocar nos vértices, mas não atravessar os lados
+        if (verificar_intersecao(p1, p2, canto_sup_esq, canto_sup_dir, True) or
+            verificar_intersecao(p1, p2, canto_sup_dir, canto_inf_dir, True) or
+            verificar_intersecao(p1, p2, canto_inf_dir, canto_inf_esq, True) or
+            verificar_intersecao(p1, p2, canto_inf_esq, canto_sup_esq, True)):
             return True
     
     return False
+
 
 def gerar_vertices():
     vertices = [ponto_inicial, ponto_final]
